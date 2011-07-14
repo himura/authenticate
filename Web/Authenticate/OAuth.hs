@@ -105,8 +105,8 @@ getTemporaryCredential' :: (Request IO -> Request IO) -- ^ Request Hook
                         -> IO Credential              -- ^ Temporary Credential (Request Token & Secret).
 getTemporaryCredential' hook oa = do
   let req = fromJust $ parseUrl $ oauthRequestUri oa
-  req' <- signOAuth oa emptyCredential (req { method = "POST" }) 
-  rsp <- withManager . httpLbs . hook $ req'
+  req' <- signOAuth oa emptyCredential $ hook $ (req { method = "POST" }) 
+  rsp <- withManager . httpLbs $ req'
   if statusCode rsp == 200
     then do
       let dic = parseSimpleQuery . toStrict . responseBody $ rsp
@@ -139,8 +139,8 @@ getAccessToken' :: (Request IO -> Request IO) -- ^ Request Hook
                 -> Credential                 -- ^ Temporary Credential with oauth_verifier
                 -> IO Credential              -- ^ Token Credential (Access Token & Secret)
 getAccessToken' hook oa cr = do
-  let req = (fromJust $ parseUrl $ oauthAccessTokenUri oa) { method = "POST" }
-  rsp <- signOAuth oa cr req >>= withManager . httpLbs . hook
+  let req = hook $ (fromJust $ parseUrl $ oauthAccessTokenUri oa) { method = "POST" }
+  rsp <- signOAuth oa cr req >>= withManager . httpLbs
   if statusCode rsp == 200
     then do
       let dic = parseSimpleQuery . toStrict . responseBody $ rsp
